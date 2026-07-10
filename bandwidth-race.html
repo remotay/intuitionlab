@@ -3,23 +3,23 @@
 <title>The Bandwidth Race — Memory Bandwidth in Real Time</title>
 <style>
   :root {
-    --bg:      #070B14;
-    --panel:   #0C1322;
-    --card:    #0B111F;
-    --line:    #1A2440;
-    --line-2:  #263657;
-    --text:    #C9D4E8;
-    --muted:   #6B7A99;
-    --faint:   #93A3C4;
-    --amber:   #FFC964;
-    --cyan:    #55D6FF;
+    --bg:      #F6F7FA;
+    --panel:   #FFFFFF;
+    --card:    #FFFFFF;
+    --line:    #E4E8F1;
+    --line-2:  #C9D2E3;
+    --text:    #232B3B;
+    --muted:   #707B95;
+    --faint:   #47536E;
+    --amber:   #B45309;
+    --cyan:    #0369A1;
     --serif:   Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
     --mono:    'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
 
   body {
     background: var(--bg);
@@ -30,7 +30,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  ::selection { background: rgba(255, 201, 100, .25); }
+  ::selection { background: rgba(180, 83, 9, .16); }
 
   button:focus-visible,
   input:focus-visible {
@@ -77,6 +77,7 @@
     margin-top: 36px;
     border: 1px solid var(--line);
     background: var(--panel);
+    box-shadow: 0 1px 3px rgba(35, 43, 59, .05);
   }
 
   #stage-canvas { display: block; width: 100%; height: 480px; }
@@ -129,8 +130,8 @@
     font-size: 11px;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: #9FB0CF;
-    background: rgba(7, 11, 20, .6);
+    color: #5D6A87;
+    background: rgba(255, 255, 255, .85);
     border: 1px solid var(--line-2);
     padding: 6px 12px;
     cursor: pointer;
@@ -314,10 +315,10 @@
   var ctx = canvas.getContext('2d');
 
   var TIERS = [
-    { name: 'PC DDR5',        sub: 'dual-channel DDR5-5600 · 90 GB/s',    gbps: 90,   col: { r: 255, g: 201, b: 100 } },
-    { name: 'MAC STUDIO',     sub: 'M3 Ultra unified memory · 819 GB/s',  gbps: 819,  col: { r: 201, g: 121, b: 232 } },
-    { name: 'RTX 5090',       sub: 'GDDR7, 512-bit · 1,792 GB/s',         gbps: 1792, col: { r: 240, g: 96,  b: 122 } },
-    { name: 'BLACKWELL ULTRA', sub: 'HBM3e · 8,000 GB/s',                 gbps: 8000, col: { r: 85,  g: 214, b: 255 } }
+    { name: 'PC DDR5',        sub: 'dual-channel DDR5-5600 · 90 GB/s',    gbps: 90,   col: { r: 180, g: 83,  b: 9   } },
+    { name: 'MAC STUDIO',     sub: 'M3 Ultra unified memory · 819 GB/s',  gbps: 819,  col: { r: 162, g: 28,  b: 175 } },
+    { name: 'RTX 5090',       sub: 'GDDR7, 512-bit · 1,792 GB/s',         gbps: 1792, col: { r: 225, g: 29,  b: 72  } },
+    { name: 'BLACKWELL ULTRA', sub: 'HBM3e · 8,000 GB/s',                 gbps: 8000, col: { r: 2,   g: 132, b: 199 } }
   ];
 
   var H = 480;
@@ -418,10 +419,10 @@
   }
 
   function draw() {
-    ctx.fillStyle = '#0C1322';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = 'rgba(78,109,166,0.05)';
+    ctx.strokeStyle = 'rgba(90,110,160,0.10)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (var gx = PAD + 64; gx < W - PAD; gx += 64) {
@@ -443,7 +444,7 @@
       var x = trackL + pos * trackW;
 
       // rail
-      ctx.strokeStyle = 'rgba(42,58,94,0.5)';
+      ctx.strokeStyle = 'rgba(148,160,190,0.55)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(trackL, y + .5);
@@ -467,7 +468,7 @@
         ctx.strokeStyle = rgba(t.col, 0.12 * bandMix);
         ctx.lineWidth = 12;
         ctx.beginPath(); ctx.moveTo(trackL + 3, y); ctx.lineTo(trackR - 3, y); ctx.stroke();
-        ctx.strokeStyle = 'rgba(255,255,255,' + 0.35 * bandMix + ')';
+        ctx.strokeStyle = 'rgba(35,43,59,' + 0.3 * bandMix + ')';
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(trackL + 3, y); ctx.lineTo(trackR - 3, y); ctx.stroke();
       }
@@ -479,21 +480,21 @@
         if (len >= 4) {
           var tail = movingRight ? Math.max(trackL, x - len) : Math.min(trackR, x + len);
           var sg = ctx.createLinearGradient(tail, 0, x, 0);
-          sg.addColorStop(0, 'rgba(255,255,255,0)');
-          sg.addColorStop(1, 'rgba(255,255,255,' + 0.4 * dotAlpha + ')');
+          sg.addColorStop(0, 'rgba(35,43,59,0)');
+          sg.addColorStop(1, 'rgba(35,43,59,' + 0.35 * dotAlpha + ')');
           ctx.strokeStyle = sg;
           ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(tail, y); ctx.lineTo(x, y); ctx.stroke();
         }
-        // one small white dot
+        // one small ink dot (white is invisible on paper)
         var pg = ctx.createRadialGradient(x, y, 0, x, y, 11);
-        pg.addColorStop(0,   'rgba(255,255,255,' + 0.9 * dotAlpha + ')');
-        pg.addColorStop(0.3, 'rgba(255,255,255,' + 0.35 * dotAlpha + ')');
-        pg.addColorStop(1,   'rgba(255,255,255,0)');
+        pg.addColorStop(0,   'rgba(35,43,59,' + 0.4 * dotAlpha + ')');
+        pg.addColorStop(0.4, 'rgba(35,43,59,' + 0.12 * dotAlpha + ')');
+        pg.addColorStop(1,   'rgba(35,43,59,0)');
         ctx.fillStyle = pg;
         ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,' + dotAlpha + ')';
-        ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(35,43,59,' + dotAlpha + ')';
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
       }
     }
 
@@ -511,11 +512,6 @@
       ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI * 2); ctx.fill();
     }
 
-    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
-    vg.addColorStop(0, 'rgba(7,11,20,0)');
-    vg.addColorStop(1, 'rgba(7,11,20,0.4)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, W, H);
   }
 
   // ---------- readouts ----------

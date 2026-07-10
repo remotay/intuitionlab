@@ -3,23 +3,23 @@
 <title>The Memory Ladder — Cache to Disk Latency</title>
 <style>
   :root {
-    --bg:      #070B14;
-    --panel:   #0C1322;
-    --card:    #0B111F;
-    --line:    #1A2440;
-    --line-2:  #263657;
-    --text:    #C9D4E8;
-    --muted:   #6B7A99;
-    --faint:   #93A3C4;
-    --amber:   #FFC964;
-    --cyan:    #55D6FF;
+    --bg:      #F6F7FA;
+    --panel:   #FFFFFF;
+    --card:    #FFFFFF;
+    --line:    #E4E8F1;
+    --line-2:  #C9D2E3;
+    --text:    #232B3B;
+    --muted:   #707B95;
+    --faint:   #47536E;
+    --amber:   #B45309;
+    --cyan:    #0369A1;
     --serif:   Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
     --mono:    'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
 
   body {
     background: var(--bg);
@@ -30,7 +30,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  ::selection { background: rgba(255, 201, 100, .25); }
+  ::selection { background: rgba(180, 83, 9, .16); }
 
   button:focus-visible,
   input:focus-visible {
@@ -77,6 +77,7 @@
     margin-top: 36px;
     border: 1px solid var(--line);
     background: var(--panel);
+    box-shadow: 0 1px 3px rgba(35, 43, 59, .05);
   }
 
   #stage-canvas { display: block; width: 100%; height: 512px; }
@@ -129,8 +130,8 @@
     font-size: 11px;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: #9FB0CF;
-    background: rgba(7, 11, 20, .6);
+    color: #5D6A87;
+    background: rgba(255, 255, 255, .85);
     border: 1px solid var(--line-2);
     padding: 6px 12px;
     cursor: pointer;
@@ -204,9 +205,9 @@
     width: 12px;
     height: 24px;
     margin-top: -10px;
-    background: #0A1626;
+    background: #FFFFFF;
     border: 1px solid var(--cyan);
-    box-shadow: 0 0 10px rgba(85, 214, 255, .55);
+    box-shadow: 0 0 8px rgba(3, 105, 161, .3);
   }
   input[type=range]::-moz-range-track { height: 4px; background: var(--line-2); }
   input[type=range]::-moz-range-progress { height: 4px; background: var(--cyan); }
@@ -214,9 +215,9 @@
     width: 10px;
     height: 22px;
     border-radius: 0;
-    background: #0A1626;
+    background: #FFFFFF;
     border: 1px solid var(--cyan);
-    box-shadow: 0 0 10px rgba(85, 214, 255, .55);
+    box-shadow: 0 0 8px rgba(3, 105, 161, .3);
   }
 
   .scale {
@@ -377,12 +378,12 @@
 
   // fast -> slow; colors run electric mint to spinning-rust ember
   var TIERS = [
-    { name: 'L1 CACHE',    lat: '1 ns',   ns: 1,       col: { r: 125, g: 243, b: 200 }, human: '1 second' },
-    { name: 'L2 CACHE',    lat: '4 ns',   ns: 4,       col: { r: 63,  g: 196, b: 245 }, human: '4 seconds' },
-    { name: 'L3 CACHE',    lat: '12 ns',  ns: 12,      col: { r: 123, g: 107, b: 232 }, human: '12 seconds' },
-    { name: 'DDR5 MEMORY', lat: '90 ns',  ns: 90,      col: { r: 232, g: 154, b: 219 }, human: '1&frac12; minutes' },
-    { name: 'NVME SSD',    lat: '25 µs',  ns: 25000,   col: { r: 240, g: 96,  b: 122 }, human: '7 hours' },
-    { name: 'HARD DISK',   lat: '8 ms',   ns: 8000000, col: { r: 255, g: 192, b: 92  }, human: '3 months' }
+    { name: 'L1 CACHE',    lat: '1 ns',   ns: 1,       col: { r: 5,   g: 150, b: 105 }, human: '1 second' },
+    { name: 'L2 CACHE',    lat: '4 ns',   ns: 4,       col: { r: 2,   g: 132, b: 199 }, human: '4 seconds' },
+    { name: 'L3 CACHE',    lat: '12 ns',  ns: 12,      col: { r: 79,  g: 70,  b: 229 }, human: '12 seconds' },
+    { name: 'DDR5 MEMORY', lat: '90 ns',  ns: 90,      col: { r: 162, g: 28,  b: 175 }, human: '1&frac12; minutes' },
+    { name: 'NVME SSD',    lat: '25 µs',  ns: 25000,   col: { r: 225, g: 29,  b: 72  }, human: '7 hours' },
+    { name: 'HARD DISK',   lat: '8 ms',   ns: 8000000, col: { r: 217, g: 119, b: 6   }, human: '3 months' }
   ];
 
   var H = 512;
@@ -493,11 +494,11 @@
   }
 
   function draw() {
-    ctx.fillStyle = '#0C1322';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, W, H);
 
     // faint vertical grid
-    ctx.strokeStyle = 'rgba(78,109,166,0.05)';
+    ctx.strokeStyle = 'rgba(90,110,160,0.10)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (var gx = PAD + 64; gx < W - PAD; gx += 64) {
@@ -520,7 +521,7 @@
       var x = trackL + pos * trackW;
 
       // rail
-      ctx.strokeStyle = 'rgba(42,58,94,0.5)';
+      ctx.strokeStyle = 'rgba(148,160,190,0.55)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(trackL, y + .5);
@@ -567,13 +568,13 @@
         }
         // the runner
         var pg = ctx.createRadialGradient(x, y, 0, x, y, 14);
-        pg.addColorStop(0,    'rgba(255,255,255,' + 0.95 * dotAlpha + ')');
-        pg.addColorStop(0.25, rgba(t.col, 0.7 * dotAlpha));
+        pg.addColorStop(0,    rgba(t.col, 0.55 * dotAlpha));
+        pg.addColorStop(0.35, rgba(t.col, 0.18 * dotAlpha));
         pg.addColorStop(1,    rgba(t.col, 0));
         ctx.fillStyle = pg;
         ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,' + dotAlpha + ')';
-        ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = rgba(t.col, dotAlpha);
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
       }
     }
 
@@ -592,11 +593,6 @@
     }
 
     // vignette
-    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
-    vg.addColorStop(0, 'rgba(7,11,20,0)');
-    vg.addColorStop(1, 'rgba(7,11,20,0.4)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, W, H);
   }
 
   // ---------- readouts ----------

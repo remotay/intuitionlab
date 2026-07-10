@@ -3,21 +3,21 @@
 <title>The Intuition Lab</title>
 <style>
   :root {
-    --bg:     #070B14;
-    --panel:  #0C1322;
-    --line:   #1A2440;
-    --text:   #C9D4E8;
-    --muted:  #6B7A99;
-    --faint:  #93A3C4;
-    --amber:  #FFC964;
-    --cyan:   #55D6FF;
+    --bg:     #F6F7FA;
+    --panel:  #FFFFFF;
+    --line:   #E4E8F1;
+    --text:   #232B3B;
+    --muted:  #707B95;
+    --faint:  #47536E;
+    --amber:  #B45309;
+    --cyan:   #0369A1;
     --serif:  Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
     --mono:   'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
 
   html, body { height: 100%; }
 
@@ -30,7 +30,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  ::selection { background: rgba(255, 201, 100, .25); }
+  ::selection { background: rgba(180, 83, 9, .16); }
 
   a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
@@ -83,7 +83,11 @@
     border: 1px solid transparent;
   }
   .nav-item:hover { border-color: var(--line); }
-  .nav-item.active { background: var(--panel); border-color: var(--line); }
+  .nav-item.active {
+    background: var(--panel);
+    border-color: var(--line);
+    box-shadow: 0 1px 3px rgba(35, 43, 59, .06);
+  }
 
   .n-num {
     font-family: var(--mono);
