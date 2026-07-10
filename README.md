@@ -27,9 +27,13 @@ Then open <http://localhost:8741/>.
 
 ## Deploy (Render)
 
-Create a **Static Site** on [Render](https://render.com), point it at this
-repo, leave the build command empty, and set the publish directory to `.` —
-there is no build step.
+This repo ships a [`render.yaml`](render.yaml) Blueprint: in the Render
+dashboard choose **New → Blueprint**, select this repo, and approve — it
+provisions a static site named `intuitionlab` with no build step, publishing
+the repo root.
+
+(Equivalently, a manual **New → Static Site** with an empty build command and
+publish directory `.` does the same thing.)
 
 ## Adding a visualization
 

@@ -1,0 +1,8 @@
+# Render Blueprint — in the Render dashboard: New -> Blueprint, pick this repo.
+# Docs: https://render.com/docs/infrastructure-as-code
+services:
+  - type: web
+    name: intuitionlab
+    runtime: static
+    buildCommand: echo "static site, no build step"
+    staticPublishPath: .
