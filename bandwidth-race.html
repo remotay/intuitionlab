@@ -79,7 +79,7 @@
     background: var(--panel);
   }
 
-  #stage-canvas { display: block; width: 100%; height: 380px; }
+  #stage-canvas { display: block; width: 100%; height: 480px; }
 
   .lane-info {
     position: absolute;
@@ -245,13 +245,13 @@
     <p class="eyebrow">Computer architecture &middot; <b>the width of the pipe</b></p>
     <h1>The <em>Bandwidth</em> Race</h1>
     <p class="thesis">The Memory Ladder asked how long the first byte takes. Bandwidth asks a
-      different question: once the data flows, how wide is the river? Three machines, three memory
+      different question: once the data flows, how wide is the river? Four machines, four memory
       systems &mdash; each dot crosses its track in exactly the time its machine needs to move one
       payload. And unlike the ladder, <i>this page runs in real time.</i></p>
   </header>
 
   <div class="stage">
-    <canvas id="stage-canvas" height="380"></canvas>
+    <canvas id="stage-canvas" height="480"></canvas>
     <div class="stage-tools">
       <button class="btn" id="btn-run" type="button">Pause</button>
       <button class="btn" id="btn-reset" type="button">Reset</button>
@@ -272,7 +272,7 @@
         <button class="btn" type="button" data-gb="10000">10 TB</button>
       </div>
       <p class="ctl-note">The payload only sets the length of the lap &mdash; the dots always hold
-        the true 1 : 9.1 : 88.9 ratio between machines.</p>
+        the true 1 : 9.1 : 19.9 : 88.9 ratio between machines.</p>
     </div>
     <div class="ctl">
       <div class="ctl-head"><span>The gap</span></div>
@@ -292,15 +292,16 @@
       <h3>Why the GPU wins</h3>
       <p>Bandwidth is bus width times clock. A DDR5 DIMM talks over 64 wires per channel, across
         centimetres of motherboard. Apple solders LPDDR5X onto the package and makes the bus many
-        times wider. HBM3e stacks the memory dies right beside the GPU and wires them with
-        <i>thousands</i> of connections &mdash; that is how you feed tens of thousands of cores.</p>
+        times wider. GDDR7 pushes each of a graphics card&rsquo;s 512 wires to extreme speed. And
+        HBM3e stacks the memory dies right beside the GPU with <i>thousands</i> of connections
+        &mdash; that is how you feed tens of thousands of cores.</p>
     </div>
     <div class="note">
       <h3>Typical, not gospel</h3>
       <p>Figures are peak, spec-sheet rates: dual-channel DDR5-5600 at ~90&hairsp;GB/s, an M3
-        Ultra Mac Studio at 819&hairsp;GB/s, a Blackwell Ultra at ~8,000&hairsp;GB/s of HBM3e.
-        Real workloads land lower &mdash; but the <i>ratios</i> hold, and they are why modern AI
-        lives and dies by memory bandwidth.</p>
+        Ultra Mac Studio at 819&hairsp;GB/s, an RTX&hairsp;5090 at 1,792&hairsp;GB/s of GDDR7, a
+        Blackwell Ultra at ~8,000&hairsp;GB/s of HBM3e. Real workloads land lower &mdash; but the
+        <i>ratios</i> hold, and they are why modern AI lives and dies by memory bandwidth.</p>
     </div>
   </section>
 </div>
@@ -315,10 +316,11 @@
   var TIERS = [
     { name: 'PC DDR5',        sub: 'dual-channel DDR5-5600 · 90 GB/s',    gbps: 90,   col: { r: 255, g: 201, b: 100 } },
     { name: 'MAC STUDIO',     sub: 'M3 Ultra unified memory · 819 GB/s',  gbps: 819,  col: { r: 201, g: 121, b: 232 } },
+    { name: 'RTX 5090',       sub: 'GDDR7, 512-bit · 1,792 GB/s',         gbps: 1792, col: { r: 240, g: 96,  b: 122 } },
     { name: 'BLACKWELL ULTRA', sub: 'HBM3e · 8,000 GB/s',                 gbps: 8000, col: { r: 85,  g: 214, b: 255 } }
   ];
 
-  var H = 380;
+  var H = 480;
   var PAD = 28;
   var LANE_TOP = 64, LANE_H = 100, RAIL_OFF = 52;
   var CAP_HALF = 16;

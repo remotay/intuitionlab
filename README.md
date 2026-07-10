@@ -10,7 +10,7 @@ physics respond.
 |---|------|---------------|
 | 01 | [`light-clock.html`](light-clock.html) | **The Light Clock** — special-relativity time dilation. Two photon clocks tick side by side; a velocity fader slows the moving clock's ticks by the Lorentz factor, live, with a γ-vs-velocity dilation curve. |
 | 02 | [`memory-ladder.html`](memory-ladder.html) | **The Memory Ladder** — memory-hierarchy latency, L1 cache to hard disk. Each runner crosses its track in exactly one access time; a logarithmic time-zoom gauge spans the 8,000,000× gap. |
-| 03 | [`bandwidth-race.html`](bandwidth-race.html) | **The Bandwidth Race** — memory bandwidth in real time. PC DDR5 vs Mac Studio unified memory vs Blackwell Ultra HBM3e; each white dot crosses its track in the time its machine moves one payload. |
+| 03 | [`bandwidth-race.html`](bandwidth-race.html) | **The Bandwidth Race** — memory bandwidth in real time. PC DDR5 vs Mac Studio unified memory vs RTX 5090 GDDR7 vs Blackwell Ultra HBM3e; each white dot crosses its track in the time its machine moves one payload. |
 
 `index.html` is the site shell: a sidebar that loads each visualization
 (standalone HTML files) into a frame, with hash routing (`#light-clock`,
