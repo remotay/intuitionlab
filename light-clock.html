@@ -1,0 +1,1027 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Light Clock — Time Dilation</title>
+<style>
+  :root {
+    --bg:      #070B14;
+    --panel:   #0C1322;
+    --card:    #0B111F;
+    --line:    #1A2440;
+    --line-2:  #263657;
+    --text:    #C9D4E8;
+    --muted:   #6B7A99;
+    --faint:   #93A3C4;
+    --amber:   #FFC964;
+    --cyan:    #55D6FF;
+    --serif:   Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --mono:    'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { color-scheme: dark; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: rgba(255, 201, 100, .25); }
+
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+  }
+
+  /* ---------- header ---------- */
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .eyebrow b {
+    color: var(--amber);
+    font-weight: 400;
+  }
+
+  h1 {
+    font-size: clamp(34px, 5vw, 48px);
+    font-weight: 400;
+    letter-spacing: .01em;
+    margin: 10px 0 14px;
+    text-wrap: balance;
+  }
+  h1 em {
+    color: var(--amber);
+    font-style: italic;
+  }
+
+  .thesis {
+    max-width: 62ch;
+    font-size: 17.5px;
+    color: var(--faint);
+  }
+
+  /* ---------- stage ---------- */
+
+  .stage {
+    position: relative;
+    margin-top: 36px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  #stage-canvas { display: block; width: 100%; height: 500px; }
+
+  .lane-label {
+    position: absolute;
+    left: 28px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  #lab-a { top: 42px;  color: var(--amber); }
+  #lab-b { top: 294px; color: var(--cyan); }
+  .lane-label span { color: var(--muted); letter-spacing: .1em; }
+
+  .stage-tools {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #9FB0CF;
+    background: rgba(7, 11, 20, .6);
+    border: 1px solid var(--line-2);
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .btn:hover { color: var(--cyan); border-color: var(--cyan); }
+
+  .stage-note {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .stage-note i { font-style: normal; color: var(--cyan); }
+
+  /* keep physics symbols lowercase inside uppercased labels */
+  .sym { text-transform: none; font-style: normal; }
+
+  /* ---------- counters ---------- */
+
+  .deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 26px;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 16px 20px 14px;
+  }
+
+  .stat-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-a { background: var(--amber); box-shadow: 0 0 8px rgba(255, 201, 100, .8); }
+  .dot-b { background: var(--cyan);  box-shadow: 0 0 8px rgba(85, 214, 255, .8); }
+  .dot-d { background: var(--faint); }
+
+  .stat-num {
+    display: block;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 42px;
+    line-height: 1.15;
+    margin-top: 6px;
+  }
+  .stat-a .stat-num { color: var(--amber); }
+  .stat-b .stat-num { color: var(--cyan); }
+  .stat-d .stat-num { color: #E6EDF9; }
+
+  .stat-sub {
+    display: block;
+    font-size: 13.5px;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .pulse { animation: pulse .45s ease-out; }
+  @keyframes pulse {
+    0%   { transform: scale(1.1); filter: brightness(1.7); }
+    100% { transform: scale(1);   filter: brightness(1); }
+  }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  @media (max-width: 760px) {
+    .controls { grid-template-columns: 1fr; }
+  }
+
+  .ctl {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 18px 22px 16px;
+  }
+
+  .ctl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ctl-head output {
+    font-size: 15px;
+    letter-spacing: .04em;
+    text-transform: none;
+    color: var(--cyan);
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 28px;
+    margin-top: 14px;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: linear-gradient(90deg, var(--cyan) var(--fill, 60%), var(--line-2) var(--fill, 60%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 24px;
+    margin-top: -10px;
+    background: #0A1626;
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 10px rgba(85, 214, 255, .55);
+  }
+  input[type=range]::-moz-range-track {
+    height: 4px;
+    background: var(--line-2);
+  }
+  input[type=range]::-moz-range-progress {
+    height: 4px;
+    background: var(--cyan);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 10px;
+    height: 22px;
+    border-radius: 0;
+    background: #0A1626;
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 10px rgba(85, 214, 255, .55);
+  }
+
+  .scale {
+    position: relative;
+    height: 16px;
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .scale span {
+    position: absolute;
+    transform: translateX(-50%);
+    letter-spacing: .05em;
+  }
+
+  .chips { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* ---------- gamma panel ---------- */
+
+  .gamma-line {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .gamma-val {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 38px;
+    color: var(--cyan);
+  }
+  .gamma-formula {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .rate-bar {
+    height: 5px;
+    margin-top: 14px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  #rate-fill {
+    height: 100%;
+    width: 80%;
+    background: linear-gradient(90deg, rgba(85, 214, 255, .35), var(--cyan));
+    transition: width .15s ease-out;
+  }
+  .rate-text {
+    margin-top: 8px;
+    font-size: 13.5px;
+    font-style: italic;
+    color: var(--faint);
+  }
+  .rate-text b {
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--cyan);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- dilation curve ---------- */
+
+  .chart-card { margin-top: 14px; }
+
+  #curve-wrap { position: relative; margin-top: 8px; }
+
+  #curve-canvas {
+    display: block;
+    width: 100%;
+    height: 250px;
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+
+  #curve-tip {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .04em;
+    color: var(--text);
+    background: rgba(10, 22, 38, .95);
+    border: 1px solid var(--line-2);
+    padding: 5px 9px;
+    white-space: nowrap;
+    transform: translate(-50%, -135%);
+  }
+  #curve-tip b { color: var(--cyan); font-weight: 400; }
+
+  /* ---------- notes ---------- */
+
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 32px;
+    margin-top: 52px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+  }
+  .note h3 {
+    font-size: 17px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .note p {
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+  .note p i { color: var(--faint); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse { animation: none; }
+    #rate-fill { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Special relativity &middot; <b>an instrument you can play</b></p>
+    <h1>The <em>Light</em> Clock</h1>
+    <p class="thesis">A photon bouncing between two mirrors is the most honest clock there is:
+      one strike, one tick. Set an identical clock moving and watch &mdash; from your seat &mdash;
+      its ticks fall behind. Nothing here is broken. This is time dilation.</p>
+  </header>
+
+  <div class="stage">
+    <canvas id="stage-canvas" height="500"></canvas>
+    <div class="lane-label" id="lab-a">Clock A <span>&mdash; at rest</span></div>
+    <div class="lane-label" id="lab-b">Clock B <span>&mdash; moving at <i id="lane-v" class="sym">0.600</i>&hairsp;<span class="sym">c</span></span></div>
+    <div class="stage-tools">
+      <button class="btn" id="btn-run" type="button">Pause</button>
+      <button class="btn" id="btn-reset" type="button">Reset</button>
+    </div>
+  </div>
+  <p class="stage-note">One tick = one mirror strike &nbsp;&middot;&nbsp; look close: at high speed the moving
+    clock also <i>narrows</i> &mdash; length contraction, the same <span class="sym">&gamma;</span> at work</p>
+
+  <div class="deck">
+    <div class="stat stat-a">
+      <span class="stat-label"><i class="dot dot-a"></i>Ticks &mdash; Clock A</span>
+      <span class="stat-num" id="count-a">000</span>
+      <span class="stat-sub">at rest in your frame</span>
+    </div>
+    <div class="stat stat-b">
+      <span class="stat-label"><i class="dot dot-b"></i>Ticks &mdash; Clock B</span>
+      <span class="stat-num" id="count-b">000</span>
+      <span class="stat-sub">moving at <span id="sub-v">0.600</span>&hairsp;c</span>
+    </div>
+    <div class="stat stat-d">
+      <span class="stat-label"><i class="dot dot-d"></i>Drift</span>
+      <span class="stat-num" id="count-d">0</span>
+      <span class="stat-sub">ticks Clock B has fallen behind</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <div class="ctl-head">
+        <label for="v-slider">Velocity of Clock B</label>
+        <output id="v-out" for="v-slider">0.600&hairsp;c</output>
+      </div>
+      <input type="range" id="v-slider" min="0" max="0.99" step="0.002" value="0.6"
+             aria-label="Velocity of Clock B, as a fraction of the speed of light">
+      <div class="scale">
+        <span style="left:0%">0</span>
+        <span style="left:25.3%">0.25c</span>
+        <span style="left:50.5%">0.50c</span>
+        <span style="left:87.5%">0.866c</span>
+        <span style="left:100%">0.99c</span>
+      </div>
+      <div class="chips">
+        <button class="btn" type="button" data-v="0.5">0.50&hairsp;<span class="sym">c</span></button>
+        <button class="btn" type="button" data-v="0.866">0.866&hairsp;<span class="sym">c</span> &mdash; <span class="sym">&gamma;</span> = 2</button>
+        <button class="btn" type="button" data-v="0.99">0.99&hairsp;<span class="sym">c</span> &mdash; <span class="sym">&gamma;</span> &asymp; 7</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-head"><span>Lorentz factor</span></div>
+      <div class="gamma-line">
+        <span class="gamma-val"><i style="font-style:normal">&gamma;</i> = <span id="gamma-val">1.250</span></span>
+        <span class="gamma-formula">&gamma; = 1 / &radic;(1 &minus; v&sup2;/c&sup2;)</span>
+      </div>
+      <div class="rate-bar"><div id="rate-fill"></div></div>
+      <p class="rate-text">Clock B runs at <b id="rate-pct">80.0%</b> of Clock A&rsquo;s rate</p>
+    </div>
+  </div>
+
+  <div class="ctl chart-card">
+    <div class="ctl-head">
+      <span>The dilation curve &mdash; <span class="sym">&gamma;</span> against velocity</span>
+      <span>hover to read &middot; drag to set</span>
+    </div>
+    <div id="curve-wrap">
+      <canvas id="curve-canvas" height="250" role="img"
+        aria-label="Curve of the Lorentz factor gamma against velocity. Gamma rises slowly until about half the speed of light, then climbs steeply toward infinity as velocity approaches c. A marker tracks the current velocity of Clock B."></canvas>
+      <div id="curve-tip"></div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <div class="note">
+      <h3>Why the path slants</h3>
+      <p>Both clocks are identical: two mirrors, one photon, one tick per strike. But Clock B&rsquo;s
+        mirrors slide sideways while its photon is in flight, so from where you stand the photon
+        must cut a <i>diagonal</i> to keep meeting them &mdash; and a diagonal between the same two
+        mirrors is simply a longer trip.</p>
+    </div>
+    <div class="note">
+      <h3>Why the ticks slow</h3>
+      <p>Light travels at <i>c</i> for every observer &mdash; it cannot speed up to make up the
+        difference. A longer path at the same speed takes more time, so each tick of Clock B
+        stretches by &gamma; = 1/&radic;(1 &minus; v&sup2;/c&sup2;). At 0.866&hairsp;c the clock
+        ticks <i>half</i> as fast; at 0.99&hairsp;c, a seventh.</p>
+    </div>
+    <div class="note">
+      <h3>It isn&rsquo;t the clock &mdash; it&rsquo;s time</h3>
+      <p>Muons born 10&hairsp;km up should decay long before reaching the ground; moving near
+        <i>c</i>, their inner clocks run slow, and they arrive. GPS clocks are corrected daily for
+        the same effect. And aboard Clock B the photon just bounces straight up and down &mdash;
+        from there, it is <i>your</i> clock that lags. Both views are right. That is relativity.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('stage-canvas');
+  var ctx = canvas.getContext('2d');
+
+  // --- geometry (CSS pixels; canvas height is fixed at 500) ---
+  var H = 500;
+  var PAD = 28;            // stage side padding
+  var CHAMBER_HALF = 48;   // half-width of a clock's mirror caps, at rest
+  var LANE_A = { top: 84,  bottom: 216 };
+  var LANE_B = { top: 336, bottom: 468 };
+  var L = LANE_A.bottom - LANE_A.top;   // mirror separation, both clocks
+
+  // --- physics scale ---
+  var T0 = 0.55;           // seconds per bounce for the resting clock
+  var C = L / T0;          // "speed of light" in px/s
+  var TRAIL_LIFE = 1.4;    // seconds a trail point survives
+  var FLASH_LIFE = 0.4;
+
+  var AMBER = { r: 255, g: 201, b: 100 };
+  var CYAN  = { r: 85,  g: 214, b: 255 };
+
+  var W = 0, dpr = 1;
+  var beta = 0.6;
+  var running = true;
+  var simTime = 0;         // advances only while running; trails/flashes age on it
+
+  var clockA = { y: LANE_A.bottom, dir: -1, ticks: 0, cx: 0, lane: LANE_A, col: AMBER, trail: [], counter: null };
+  var clockB = { y: LANE_B.bottom, dir: -1, ticks: 0, cx: 0, lane: LANE_B, col: CYAN,  trail: [], counter: null };
+  var flashes = [];
+
+  var els = {
+    countA: document.getElementById('count-a'),
+    countB: document.getElementById('count-b'),
+    countD: document.getElementById('count-d'),
+    gamma:  document.getElementById('gamma-val'),
+    rateF:  document.getElementById('rate-fill'),
+    rateP:  document.getElementById('rate-pct'),
+    vOut:   document.getElementById('v-out'),
+    subV:   document.getElementById('sub-v'),
+    laneV:  document.getElementById('lane-v'),
+    slider: document.getElementById('v-slider'),
+    run:    document.getElementById('btn-run'),
+    reset:  document.getElementById('btn-reset')
+  };
+  clockA.counter = els.countA;
+  clockB.counter = els.countB;
+
+  function gammaOf(b) { return 1 / Math.sqrt(1 - b * b); }
+
+  function rgba(c, a) { return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')'; }
+
+  function resize() {
+    var oldW = W;
+    W = canvas.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    clockA.cx = W / 2;
+    if (oldW > 0) {
+      var oldRange = oldW - 2 * (PAD + CHAMBER_HALF);
+      var newRange = W - 2 * (PAD + CHAMBER_HALF);
+      clockB.cx = PAD + CHAMBER_HALF + (clockB.cx - (PAD + CHAMBER_HALF)) / Math.max(1, oldRange) * newRange;
+      clockB.trail.length = 0;
+      clockA.trail.length = 0;
+    } else {
+      clockB.cx = PAD + CHAMBER_HALF;
+    }
+  }
+
+  function onTick(clock, mirrorY) {
+    clock.ticks++;
+    flashes.push({ x: clock.cx, y: mirrorY, t: simTime, col: clock.col });
+    pulse(clock.counter);
+  }
+
+  function pulse(el) {
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+  }
+
+  function advanceVertical(clock, vy, dt) {
+    var y = clock.y + clock.dir * vy * dt;
+    var guard = 0;
+    while ((y < clock.lane.top || y > clock.lane.bottom) && guard++ < 6) {
+      if (y < clock.lane.top) {
+        y = clock.lane.top + (clock.lane.top - y);
+        clock.dir = 1;
+        onTick(clock, clock.lane.top);
+      } else {
+        y = clock.lane.bottom - (y - clock.lane.bottom);
+        clock.dir = -1;
+        onTick(clock, clock.lane.bottom);
+      }
+    }
+    clock.y = y;
+  }
+
+  function step(dt) {
+    simTime += dt;
+    var g = gammaOf(beta);
+
+    // Clock A: photon climbs at c.
+    advanceVertical(clockA, C, dt);
+    clockA.trail.push({ x: clockA.cx, y: clockA.y, t: simTime });
+
+    // Clock B: chamber slides at beta*c, photon's vertical speed is c/gamma,
+    // so its diagonal speed is exactly c.
+    clockB.cx += beta * C * dt;
+    var xMax = W - PAD - CHAMBER_HALF;
+    if (clockB.cx > xMax) {
+      clockB.cx = PAD + CHAMBER_HALF + (clockB.cx - xMax);
+      clockB.trail.push({ brk: true });
+    }
+    advanceVertical(clockB, C / g, dt);
+    clockB.trail.push({ x: clockB.cx, y: clockB.y, t: simTime });
+
+    prune(clockA.trail);
+    prune(clockB.trail);
+    for (var i = flashes.length - 1; i >= 0; i--) {
+      if (simTime - flashes[i].t > FLASH_LIFE) flashes.splice(i, 1);
+    }
+  }
+
+  function prune(trail) {
+    while (trail.length && (trail[0].brk || simTime - trail[0].t > TRAIL_LIFE)) trail.shift();
+    if (trail.length > 400) trail.splice(0, trail.length - 400);
+  }
+
+  // ---------- drawing ----------
+
+  function drawBackground() {
+    ctx.fillStyle = '#0C1322';
+    ctx.fillRect(0, 0, W, H);
+
+    // faint spacetime grid
+    ctx.strokeStyle = 'rgba(78,109,166,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var x = PAD; x < W - PAD; x += 64) { ctx.moveTo(x + .5, 24); ctx.lineTo(x + .5, H - 12); }
+    for (var y = 84; y < H; y += 64)        { ctx.moveTo(PAD, y + .5); ctx.lineTo(W - PAD, y + .5); }
+    ctx.stroke();
+
+    // divider between lanes
+    ctx.strokeStyle = 'rgba(26,36,64,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(PAD, 262.5);
+    ctx.lineTo(W - PAD, 262.5);
+    ctx.stroke();
+  }
+
+  function drawRails(lane) {
+    ctx.strokeStyle = 'rgba(42,58,94,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, lane.top + .5);    ctx.lineTo(W - PAD, lane.top + .5);
+    ctx.moveTo(PAD, lane.bottom + .5); ctx.lineTo(W - PAD, lane.bottom + .5);
+    ctx.stroke();
+  }
+
+  function drawChamber(clock, halfW) {
+    var lane = clock.lane, cx = clock.cx, col = clock.col;
+
+    // glass body
+    ctx.fillStyle = rgba(col, 0.03);
+    ctx.fillRect(cx - halfW, lane.top, halfW * 2, lane.bottom - lane.top);
+    ctx.strokeStyle = rgba(col, 0.12);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW + .5, lane.top); ctx.lineTo(cx - halfW + .5, lane.bottom);
+    ctx.moveTo(cx + halfW - .5, lane.top); ctx.lineTo(cx + halfW - .5, lane.bottom);
+    ctx.stroke();
+
+    // mirror caps
+    var grad = ctx.createLinearGradient(cx - halfW, 0, cx + halfW, 0);
+    grad.addColorStop(0,   rgba(col, 0.1));
+    grad.addColorStop(0.5, rgba(col, 0.95));
+    grad.addColorStop(1,   rgba(col, 0.1));
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW, lane.top);    ctx.lineTo(cx + halfW, lane.top);
+    ctx.moveTo(cx - halfW, lane.bottom); ctx.lineTo(cx + halfW, lane.bottom);
+    ctx.stroke();
+  }
+
+  function drawTrail(trail, col) {
+    for (var i = 1; i < trail.length; i++) {
+      var p0 = trail[i - 1], p1 = trail[i];
+      if (p0.brk || p1.brk) continue;
+      var age = (simTime - p1.t) / TRAIL_LIFE;
+      var a = Math.max(0, 1 - age);
+      a = a * a;
+      ctx.strokeStyle = rgba(col, a * 0.22);
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      ctx.strokeStyle = rgba(col, a * 0.85);
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+  }
+
+  function drawFlashes() {
+    for (var i = 0; i < flashes.length; i++) {
+      var f = flashes[i];
+      var age = (simTime - f.t) / FLASH_LIFE;
+      var r = 8 + 30 * age;
+      var a = (1 - age) * 0.5;
+      var grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+      grad.addColorStop(0, rgba(f.col, a));
+      grad.addColorStop(1, rgba(f.col, 0));
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawPhoton(clock) {
+    var x = clock.cx, y = clock.y, col = clock.col;
+    var grad = ctx.createRadialGradient(x, y, 0, x, y, 16);
+    grad.addColorStop(0,    'rgba(255,255,255,0.95)');
+    grad.addColorStop(0.25, rgba(col, 0.75));
+    grad.addColorStop(1,    rgba(col, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawVignette() {
+    var grad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    grad.addColorStop(0, 'rgba(7,11,20,0)');
+    grad.addColorStop(1, 'rgba(7,11,20,0.4)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function draw() {
+    var g = gammaOf(beta);
+    drawBackground();
+    drawRails(LANE_A);
+    drawRails(LANE_B);
+    drawChamber(clockA, CHAMBER_HALF);
+    drawChamber(clockB, CHAMBER_HALF / g);   // length contraction, for real
+    drawTrail(clockA.trail, AMBER);
+    drawTrail(clockB.trail, CYAN);
+    drawFlashes();
+    drawPhoton(clockA);
+    drawPhoton(clockB);
+    drawVignette();
+  }
+
+  // ---------- readouts ----------
+
+  var lastDrift = -1;
+
+  function setText(el, s) { if (el.textContent !== s) el.textContent = s; }
+
+  function updateReadouts() {
+    var g = gammaOf(beta);
+    setText(els.countA, String(clockA.ticks).padStart(3, '0'));
+    setText(els.countB, String(clockB.ticks).padStart(3, '0'));
+    var drift = clockA.ticks - clockB.ticks;
+    setText(els.countD, String(drift));
+    if (drift !== lastDrift && lastDrift >= 0 && drift > lastDrift) pulse(els.countD);
+    lastDrift = drift;
+    setText(els.gamma, g.toFixed(3));
+    setText(els.rateP, (100 / g).toFixed(1) + '%');
+    els.rateF.style.width = (100 / g) + '%';
+    var v = beta.toFixed(3);
+    setText(els.vOut, v + ' ' + 'c');
+    setText(els.subV, v);
+    setText(els.laneV, v);
+  }
+
+  // ---------- dilation curve chart ----------
+
+  var curve = document.getElementById('curve-canvas');
+  var cctx = curve.getContext('2d');
+  var tip = document.getElementById('curve-tip');
+  var CH = 250;
+  var CM = { l: 46, r: 20, t: 22, b: 30 };   // plot margins
+  var Y_MAX = 8;
+  var CW = 0;
+  var hoverBeta = null;
+  var chartDragging = false;
+
+  function chartX(b) { return CM.l + b * (CW - CM.l - CM.r); }
+  function chartY(g) { return CH - CM.b - (g - 1) / (Y_MAX - 1) * (CH - CM.t - CM.b); }
+
+  function sizeChart() {
+    var d = window.devicePixelRatio || 1;
+    CW = curve.clientWidth;
+    curve.width = Math.round(CW * d);
+    curve.height = Math.round(CH * d);
+    cctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  function drawChart() {
+    if (!CW) return;
+    cctx.clearRect(0, 0, CW, CH);
+    cctx.font = '10px "Cascadia Mono", Consolas, monospace';
+    var baseY = chartY(1);
+
+    // horizontal grid + gamma labels
+    cctx.textAlign = 'right';
+    cctx.textBaseline = 'middle';
+    for (var g = 2; g <= Y_MAX; g += 2) {
+      cctx.strokeStyle = 'rgba(78,109,166,0.10)';
+      cctx.lineWidth = 1;
+      cctx.beginPath();
+      cctx.moveTo(CM.l, chartY(g) + .5);
+      cctx.lineTo(CW - CM.r, chartY(g) + .5);
+      cctx.stroke();
+      cctx.fillStyle = '#6B7A99';
+      cctx.fillText(String(g), CM.l - 9, chartY(g));
+    }
+    cctx.fillText('1', CM.l - 9, baseY);
+
+    // baseline + velocity ticks
+    cctx.strokeStyle = 'rgba(42,58,94,0.8)';
+    cctx.beginPath();
+    cctx.moveTo(CM.l, baseY + .5);
+    cctx.lineTo(CW - CM.r, baseY + .5);
+    cctx.stroke();
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'top';
+    cctx.fillStyle = '#6B7A99';
+    var ticks = [[0, '0'], [0.25, '0.25c'], [0.5, '0.50c'], [0.75, '0.75c']];
+    for (var i = 0; i < ticks.length; i++) {
+      cctx.fillText(ticks[i][1], chartX(ticks[i][0]), baseY + 9);
+    }
+
+    // the light barrier: dashed asymptote at v = c
+    var xc = chartX(1);
+    cctx.strokeStyle = 'rgba(147,163,196,0.35)';
+    cctx.setLineDash([3, 5]);
+    cctx.beginPath();
+    cctx.moveTo(xc + .5, CM.t - 6);
+    cctx.lineTo(xc + .5, baseY);
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.fillStyle = '#93A3C4';
+    cctx.fillText('c', xc, baseY + 9);
+    cctx.textAlign = 'right';
+    cctx.textBaseline = 'alphabetic';
+    cctx.fillText('γ → ∞', xc - 8, CM.t + 4);
+
+    // the curve itself, clipped to the plot
+    cctx.save();
+    cctx.beginPath();
+    cctx.rect(CM.l, CM.t, CW - CM.l - CM.r, baseY - CM.t);
+    cctx.clip();
+    cctx.beginPath();
+    for (var b = 0; b <= 0.9935; b += 0.002) {
+      var gv = gammaOf(b);
+      if (b === 0) cctx.moveTo(chartX(b), chartY(gv));
+      else cctx.lineTo(chartX(b), chartY(gv));
+      if (gv > Y_MAX + 0.5) break;
+    }
+    cctx.strokeStyle = 'rgba(85,214,255,0.16)';
+    cctx.lineWidth = 6;
+    cctx.stroke();
+    cctx.strokeStyle = 'rgba(85,214,255,0.95)';
+    cctx.lineWidth = 2;
+    cctx.stroke();
+    cctx.restore();
+
+    // hollow rings at the preset velocities
+    var presets = [0.5, 0.866, 0.99];
+    for (var p = 0; p < presets.length; p++) {
+      cctx.beginPath();
+      cctx.arc(chartX(presets[p]), chartY(gammaOf(presets[p])), 3, 0, Math.PI * 2);
+      cctx.fillStyle = '#0B111F';
+      cctx.fill();
+      cctx.strokeStyle = 'rgba(85,214,255,0.5)';
+      cctx.lineWidth = 1;
+      cctx.stroke();
+    }
+
+    // hover crosshair + ghost dot
+    if (hoverBeta !== null) {
+      var hx = chartX(hoverBeta);
+      var hy = chartY(Math.min(gammaOf(hoverBeta), Y_MAX));
+      cctx.strokeStyle = 'rgba(201,212,232,0.14)';
+      cctx.lineWidth = 1;
+      cctx.beginPath();
+      cctx.moveTo(hx + .5, CM.t);
+      cctx.lineTo(hx + .5, baseY);
+      cctx.stroke();
+      cctx.beginPath();
+      cctx.arc(hx, hy, 4, 0, Math.PI * 2);
+      cctx.strokeStyle = 'rgba(201,212,232,0.6)';
+      cctx.stroke();
+    }
+
+    // current-velocity marker: drop lines + photon-styled dot
+    var mx = chartX(beta);
+    var mg = gammaOf(beta);
+    var my = chartY(Math.min(mg, Y_MAX));
+    cctx.strokeStyle = 'rgba(85,214,255,0.35)';
+    cctx.lineWidth = 1;
+    cctx.setLineDash([3, 4]);
+    cctx.beginPath();
+    cctx.moveTo(mx + .5, my);
+    cctx.lineTo(mx + .5, baseY);
+    cctx.moveTo(CM.l, my + .5);
+    cctx.lineTo(mx, my + .5);
+    cctx.stroke();
+    cctx.setLineDash([]);
+    var mgrad = cctx.createRadialGradient(mx, my, 0, mx, my, 13);
+    mgrad.addColorStop(0, 'rgba(255,255,255,0.9)');
+    mgrad.addColorStop(0.3, 'rgba(85,214,255,0.6)');
+    mgrad.addColorStop(1, 'rgba(85,214,255,0)');
+    cctx.fillStyle = mgrad;
+    cctx.beginPath(); cctx.arc(mx, my, 13, 0, Math.PI * 2); cctx.fill();
+    cctx.fillStyle = '#0B111F';
+    cctx.beginPath(); cctx.arc(mx, my, 6, 0, Math.PI * 2); cctx.fill();
+    cctx.fillStyle = 'rgba(85,214,255,1)';
+    cctx.beginPath(); cctx.arc(mx, my, 4.5, 0, Math.PI * 2); cctx.fill();
+    cctx.fillStyle = '#FFFFFF';
+    cctx.beginPath(); cctx.arc(mx, my, 1.8, 0, Math.PI * 2); cctx.fill();
+  }
+
+  function chartBetaFromEvent(e) {
+    var rect = curve.getBoundingClientRect();
+    var b = (e.clientX - rect.left - CM.l) / (CW - CM.l - CM.r);
+    return Math.min(0.99, Math.max(0, b));
+  }
+
+  function showTip(b) {
+    var g = gammaOf(b);
+    var px = Math.min(CW - 78, Math.max(78, chartX(b)));
+    tip.style.display = 'block';
+    tip.style.left = px + 'px';
+    tip.style.top = chartY(Math.min(g, Y_MAX)) + 'px';
+    tip.innerHTML = b.toFixed(3) + ' c  ·  <b>γ = ' + g.toFixed(3) + '</b>';
+  }
+
+  curve.addEventListener('pointerdown', function (e) {
+    chartDragging = true;
+    curve.setPointerCapture(e.pointerId);
+    setBeta(chartBetaFromEvent(e));
+    e.preventDefault();
+  });
+  curve.addEventListener('pointermove', function (e) {
+    var b = chartBetaFromEvent(e);
+    if (chartDragging) setBeta(b);
+    hoverBeta = b;
+    showTip(b);
+    drawChart();
+  });
+  curve.addEventListener('pointerup', function () { chartDragging = false; });
+  curve.addEventListener('pointerleave', function () {
+    if (chartDragging) return;
+    hoverBeta = null;
+    tip.style.display = 'none';
+    drawChart();
+  });
+
+  // ---------- controls ----------
+
+  function setBeta(b) {
+    beta = Math.min(0.99, Math.max(0, b));
+    els.slider.value = beta;
+    els.slider.style.setProperty('--fill', (beta / 0.99 * 100) + '%');
+    updateReadouts();
+    drawChart();
+  }
+
+  els.slider.addEventListener('input', function () { setBeta(parseFloat(this.value)); });
+
+  var chips = document.querySelectorAll('.chips .btn');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener('click', function () { setBeta(parseFloat(this.dataset.v)); });
+  }
+
+  els.run.addEventListener('click', function () {
+    running = !running;
+    this.textContent = running ? 'Pause' : 'Run';
+  });
+
+  els.reset.addEventListener('click', function () {
+    clockA.ticks = 0; clockB.ticks = 0;
+    clockA.y = LANE_A.bottom; clockA.dir = -1;
+    clockB.y = LANE_B.bottom; clockB.dir = -1;
+    clockB.cx = PAD + CHAMBER_HALF;
+    clockA.trail.length = 0;
+    clockB.trail.length = 0;
+    flashes.length = 0;
+    lastDrift = -1;
+    updateReadouts();
+  });
+
+  // ---------- main loop ----------
+
+  var lastT = 0;
+
+  function frame(t) {
+    var dt = Math.min(0.05, (t - lastT) / 1000);
+    lastT = t;
+    if (running) step(dt);
+    draw();
+    updateReadouts();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', function () { resize(); draw(); sizeChart(); drawChart(); });
+
+  resize();
+  sizeChart();
+  setBeta(0.6);
+
+  // Reduced motion: start paused, but pre-simulate a couple of seconds so the
+  // straight and zig-zag paths are visible as a still image.
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    running = false;
+    els.run.textContent = 'Run';
+    for (var k = 0; k < 140; k++) step(1 / 60);
+  }
+
+  requestAnimationFrame(function (t) { lastT = t; requestAnimationFrame(frame); });
+})();
+</script>

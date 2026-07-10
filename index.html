@@ -1,0 +1,224 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Intuition Lab</title>
+<style>
+  :root {
+    --bg:     #070B14;
+    --panel:  #0C1322;
+    --line:   #1A2440;
+    --text:   #C9D4E8;
+    --muted:  #6B7A99;
+    --faint:  #93A3C4;
+    --amber:  #FFC964;
+    --cyan:   #55D6FF;
+    --serif:  Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --mono:   'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { color-scheme: dark; }
+
+  html, body { height: 100%; }
+
+  body {
+    display: flex;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: rgba(255, 201, 100, .25); }
+
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  /* ---------- sidebar ---------- */
+
+  .sidebar {
+    width: 268px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--line);
+    padding: 30px 20px 24px;
+    overflow-y: auto;
+  }
+
+  .brand-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .brand {
+    font-size: 23px;
+    font-weight: 400;
+    margin-top: 8px;
+    color: var(--text);
+  }
+  .brand em { color: var(--amber); font-style: italic; }
+
+  .brand-sub {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 34px;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 11px 13px;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .nav-item:hover { border-color: var(--line); }
+  .nav-item.active { background: var(--panel); border-color: var(--line); }
+
+  .n-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .18em;
+    color: var(--muted);
+  }
+  .nav-item.active .n-num { color: var(--amber); }
+
+  .n-title {
+    display: block;
+    font-size: 15.5px;
+    color: var(--text);
+    margin-top: 3px;
+  }
+  .nav-item.active .n-title { color: var(--amber); }
+
+  .n-hook {
+    display: block;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .nav-item.soon { opacity: .45; pointer-events: none; }
+
+  .side-foot {
+    margin-top: auto;
+    padding-top: 28px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- viewport ---------- */
+
+  main { flex: 1; min-width: 0; }
+
+  iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: var(--bg);
+  }
+
+  /* ---------- narrow screens: top bar ---------- */
+
+  @media (max-width: 800px) {
+    body { flex-direction: column; }
+    .sidebar {
+      width: auto;
+      flex-direction: column;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 18px 20px 12px;
+      overflow: visible;
+    }
+    .brand-sub { display: none; }
+    nav {
+      flex-direction: row;
+      gap: 8px;
+      margin-top: 14px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+    .nav-item { flex: none; padding: 8px 12px; }
+    .n-hook { display: none; }
+    .side-foot { display: none; }
+    main { flex: 1; min-height: 0; }
+  }
+</style>
+
+<aside class="sidebar">
+  <p class="brand-eyebrow">Visual experiments</p>
+  <h1 class="brand">The <em>Intuition</em> Lab</h1>
+  <p class="brand-sub">machines for seeing what numbers hide</p>
+
+  <nav id="nav">
+    <a class="nav-item" href="#light-clock" data-slug="light-clock">
+      <span class="n-num">01</span>
+      <span class="n-title">The Light Clock</span>
+      <span class="n-hook">time dilation, watched live</span>
+    </a>
+    <a class="nav-item" href="#memory-ladder" data-slug="memory-ladder">
+      <span class="n-num">02</span>
+      <span class="n-title">The Memory Ladder</span>
+      <span class="n-hook">how far away your data lives</span>
+    </a>
+    <a class="nav-item soon" href="#" aria-disabled="true">
+      <span class="n-num">03</span>
+      <span class="n-title">In the works&hellip;</span>
+      <span class="n-hook">more instruments soon</span>
+    </a>
+  </nav>
+
+  <p class="side-foot">Every figure is live &mdash; go play</p>
+</aside>
+
+<main>
+  <iframe id="viz-frame" title="Visualization" src="light-clock.html"></iframe>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var VIZ = {
+    'light-clock':   { file: 'light-clock.html',   title: 'The Light Clock' },
+    'memory-ladder': { file: 'memory-ladder.html', title: 'The Memory Ladder' }
+  };
+  var DEFAULT = 'light-clock';
+
+  var frame = document.getElementById('viz-frame');
+  var items = document.querySelectorAll('.nav-item[data-slug]');
+  var current = null;
+
+  function go(slug) {
+    if (!VIZ[slug]) slug = DEFAULT;
+    if (slug === current) return;
+    current = slug;
+    frame.src = VIZ[slug].file;
+    document.title = VIZ[slug].title + ' · The Intuition Lab';
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.toggle('active', items[i].dataset.slug === slug);
+    }
+  }
+
+  window.addEventListener('hashchange', function () {
+    go(location.hash.replace('#', ''));
+  });
+
+  go(location.hash.replace('#', '') || DEFAULT);
+})();
+</script>

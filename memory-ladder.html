@@ -1,0 +1,674 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Memory Ladder — Cache to Disk Latency</title>
+<style>
+  :root {
+    --bg:      #070B14;
+    --panel:   #0C1322;
+    --card:    #0B111F;
+    --line:    #1A2440;
+    --line-2:  #263657;
+    --text:    #C9D4E8;
+    --muted:   #6B7A99;
+    --faint:   #93A3C4;
+    --amber:   #FFC964;
+    --cyan:    #55D6FF;
+    --serif:   Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --mono:    'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { color-scheme: dark; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: rgba(255, 201, 100, .25); }
+
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+  }
+
+  /* ---------- header ---------- */
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .eyebrow b { color: var(--amber); font-weight: 400; }
+
+  h1 {
+    font-size: clamp(34px, 5vw, 48px);
+    font-weight: 400;
+    letter-spacing: .01em;
+    margin: 10px 0 14px;
+    text-wrap: balance;
+  }
+  h1 em { color: var(--amber); font-style: italic; }
+
+  .thesis {
+    max-width: 62ch;
+    font-size: 17.5px;
+    color: var(--faint);
+  }
+
+  /* ---------- stage ---------- */
+
+  .stage {
+    position: relative;
+    margin-top: 36px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  #stage-canvas { display: block; width: 100%; height: 512px; }
+
+  .lane-info {
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .li-name { letter-spacing: .16em; }
+  .li-name .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .li-lat { color: var(--muted); letter-spacing: .06em; }
+  .li-right { color: var(--muted); font-size: 10.5px; letter-spacing: .08em; overflow: hidden; text-overflow: ellipsis; }
+  .li-right b {
+    color: var(--text);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stage-tools {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #9FB0CF;
+    background: rgba(7, 11, 20, .6);
+    border: 1px solid var(--line-2);
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .btn:hover { color: var(--cyan); border-color: var(--cyan); }
+
+  .stage-note {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .stage-note i { font-style: normal; color: var(--cyan); }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    margin-top: 26px;
+  }
+  @media (max-width: 760px) {
+    .controls { grid-template-columns: 1fr; }
+  }
+
+  .ctl {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 18px 22px 16px;
+  }
+
+  .ctl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ctl-head output {
+    font-size: 14px;
+    letter-spacing: .04em;
+    text-transform: none;
+    color: var(--cyan);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 28px;
+    margin-top: 14px;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: linear-gradient(90deg, var(--cyan) var(--fill, 40%), var(--line-2) var(--fill, 40%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 24px;
+    margin-top: -10px;
+    background: #0A1626;
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 10px rgba(85, 214, 255, .55);
+  }
+  input[type=range]::-moz-range-track { height: 4px; background: var(--line-2); }
+  input[type=range]::-moz-range-progress { height: 4px; background: var(--cyan); }
+  input[type=range]::-moz-range-thumb {
+    width: 10px;
+    height: 22px;
+    border-radius: 0;
+    background: #0A1626;
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 10px rgba(85, 214, 255, .55);
+  }
+
+  .scale {
+    position: relative;
+    height: 16px;
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .scale span { position: absolute; transform: translateX(-50%); letter-spacing: .05em; }
+
+  .zoom-note {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .zoom-note b {
+    color: var(--faint);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chips { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* ---------- analogy card ---------- */
+
+  .ladder-rows { margin-top: 12px; }
+  .ladder-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .06em;
+  }
+  .ladder-row:last-child { border-bottom: none; }
+  .ladder-row .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .ladder-row .lr-val { color: var(--text); }
+  .ladder-row .lr-name { color: var(--muted); }
+  .ladder-note {
+    margin-top: 10px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  /* ---------- notes ---------- */
+
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 32px;
+    margin-top: 52px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+  }
+  .note h3 {
+    font-size: 17px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .note p { font-size: 14.5px; color: var(--muted); }
+  .note p i { color: var(--faint); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Computer architecture &middot; <b>the cost of distance</b></p>
+    <h1>The Memory <em>Ladder</em></h1>
+    <p class="thesis">Everything your processor touches lives somewhere on a ladder &mdash; caches
+      millimetres from the core, memory centimetres away, disks an eternity below. Each dot here
+      crosses its track in exactly one access time. Slow the clock until you can watch the cache
+      sprint &mdash; and the disk stand still.</p>
+  </header>
+
+  <div class="stage">
+    <canvas id="stage-canvas" height="512"></canvas>
+    <div class="stage-tools">
+      <button class="btn" id="btn-run" type="button">Pause</button>
+      <button class="btn" id="btn-reset" type="button">Reset</button>
+    </div>
+  </div>
+  <p class="stage-note">One trip = one memory access &nbsp;&middot;&nbsp; at high zoom the fast lanes
+    blur into <i>solid light</i> &mdash; read the trip counters instead</p>
+
+  <div class="controls">
+    <div class="ctl">
+      <div class="ctl-head">
+        <label for="zoom-slider">Time zoom</label>
+        <output id="zoom-out" for="zoom-slider">1 s on screen = 2.0 ns</output>
+      </div>
+      <input type="range" id="zoom-slider" min="0" max="1000" step="1" value="41"
+             aria-label="Time zoom: how many nanoseconds of real time pass per second of animation">
+      <div class="scale">
+        <span style="left:0%">1 ns</span>
+        <span style="left:41.1%">1 &micro;s</span>
+        <span style="left:82.2%">1 ms</span>
+        <span style="left:100%">20 ms</span>
+      </div>
+      <p class="zoom-note">real time slowed by a factor of <b id="zoom-factor">&times;500,000,000</b></p>
+      <div class="chips">
+        <button class="btn" type="button" data-ns="2">Watch L1</button>
+        <button class="btn" type="button" data-ns="180">Watch DDR5</button>
+        <button class="btn" type="button" data-ns="50000">Watch SSD</button>
+        <button class="btn" type="button" data-ns="16000000">Watch HDD</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-head"><span>If an L1 fetch took one second</span></div>
+      <div class="ladder-rows" id="ladder-rows"></div>
+      <p class="ladder-note">One nanosecond stretched to one second &mdash; a &times;1,000,000,000 slow-down.</p>
+    </div>
+  </div>
+
+  <section class="notes">
+    <div class="note">
+      <h3>Why the ladder exists</h3>
+      <p>In one nanosecond, light itself travels only 30&hairsp;centimetres. A cache that answers in
+        a nanosecond must sit millimetres from the core &mdash; and it does. Every rung below is
+        bigger, cheaper, and farther away: physics sells capacity or speed, never both at once.</p>
+    </div>
+    <div class="note">
+      <h3>What a miss costs</h3>
+      <p>A modern core can retire several instructions per cycle. In the ~90&hairsp;ns it waits for
+        DDR5 it could have executed a thousand; during one disk seek, tens of millions. This is why
+        processors predict and prefetch &mdash; and why fast software keeps its working set near the
+        top of the ladder.</p>
+    </div>
+    <div class="note">
+      <h3>Typical, not gospel</h3>
+      <p>Real latencies vary with the chip, the queue depth, and plain luck &mdash; read every figure
+        here as an honest order of magnitude. The <i>shape</i> is the story: each rung is 3&times; to
+        300&times; the one above, and from L1 to a hard disk the gap is eight million to one.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('stage-canvas');
+  var ctx = canvas.getContext('2d');
+
+  // fast -> slow; colors run electric mint to spinning-rust ember
+  var TIERS = [
+    { name: 'L1 CACHE',    lat: '1 ns',   ns: 1,       col: { r: 125, g: 243, b: 200 }, human: '1 second' },
+    { name: 'L2 CACHE',    lat: '4 ns',   ns: 4,       col: { r: 63,  g: 196, b: 245 }, human: '4 seconds' },
+    { name: 'L3 CACHE',    lat: '12 ns',  ns: 12,      col: { r: 123, g: 107, b: 232 }, human: '12 seconds' },
+    { name: 'DDR5 MEMORY', lat: '90 ns',  ns: 90,      col: { r: 232, g: 154, b: 219 }, human: '1&frac12; minutes' },
+    { name: 'NVME SSD',    lat: '25 µs',  ns: 25000,   col: { r: 240, g: 96,  b: 122 }, human: '7 hours' },
+    { name: 'HARD DISK',   lat: '8 ms',   ns: 8000000, col: { r: 255, g: 192, b: 92  }, human: '3 months' }
+  ];
+
+  var H = 512;
+  var PAD = 28;
+  var LANE_TOP = 60, LANE_H = 72, RAIL_OFF = 48;   // rail y = LANE_TOP + i*LANE_H + RAIL_OFF
+  var CAP_HALF = 14;
+  var LOG_MAX = Math.log(2e7) / Math.LN10;         // slider spans 1 ns/s .. 20 ms/s
+  var FLASH_LIFE = 0.4;
+
+  var W = 0;
+  var nsPerS = 2;
+  var running = true;
+  var simNs = 0;
+  var simTime = 0;
+  var flashes = [];
+
+  function railY(i) { return LANE_TOP + i * LANE_H + RAIL_OFF; }
+  function rgba(c, a) { return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')'; }
+
+  // ---------- build per-lane overlays + analogy rows ----------
+
+  var stage = document.querySelector('.stage');
+  var ladderRows = document.getElementById('ladder-rows');
+
+  TIERS.forEach(function (t, i) {
+    var hex = rgba(t.col, 1);
+    var info = document.createElement('div');
+    info.className = 'lane-info';
+    info.style.top = (LANE_TOP + i * LANE_H) + 'px';
+    info.innerHTML =
+      '<span class="li-name" style="color:' + hex + '"><i class="dot" style="background:' + hex +
+      ';box-shadow:0 0 8px ' + rgba(t.col, .8) + '"></i>' + t.name +
+      ' <span class="li-lat">&mdash; ' + t.lat + '</span></span>' +
+      '<span class="li-right">TRIPS <b id="trips-' + i + '">0</b> &nbsp;&middot;&nbsp; CROSSES IN <b id="cross-' + i + '"></b></span>';
+    stage.appendChild(info);
+    t.tripsEl = document.getElementById('trips-' + i);
+    t.crossEl = document.getElementById('cross-' + i);
+    t.lastTrips = 0;
+
+    var row = document.createElement('div');
+    row.className = 'ladder-row';
+    row.innerHTML =
+      '<span class="lr-name"><i class="dot" style="background:' + hex + '"></i>' + t.name + '</span>' +
+      '<span class="lr-val">' + t.human + '</span>';
+    ladderRows.appendChild(row);
+  });
+
+  // ---------- formatting ----------
+
+  function fmtTrips(n) {
+    if (n < 10000) return n.toLocaleString('en-US');
+    if (n < 1e6)  return (n / 1e3).toFixed(1) + ' k';
+    if (n < 1e9)  return (n / 1e6).toFixed(2) + ' M';
+    return (n / 1e9).toFixed(2) + ' B';
+  }
+
+  function sig2(x) {
+    var s = Number(x.toPrecision(2));
+    return String(s);
+  }
+
+  function fmtNs(ns) {
+    if (ns < 1e3) return sig2(ns) + ' ns';
+    if (ns < 1e6) return sig2(ns / 1e3) + ' µs';
+    return sig2(ns / 1e6) + ' ms';
+  }
+
+  function fmtDur(s) {
+    if (s < 1e-6)     return sig2(s * 1e9) + ' ns';
+    if (s < 1e-3)     return sig2(s * 1e6) + ' µs';
+    if (s < 1)        return sig2(s * 1e3) + ' ms';
+    if (s < 60)       return (s < 10 ? s.toFixed(1) : Math.round(s)) + ' s';
+    if (s < 3600)     return (s / 60 < 10 ? (s / 60).toFixed(1) : Math.round(s / 60)) + ' min';
+    if (s < 172800)   return (s / 3600 < 10 ? (s / 3600).toFixed(1) : Math.round(s / 3600)) + ' h';
+    if (s < 3.15e7)   return Math.round(s / 86400) + ' days';
+    return (s / 3.15e7).toFixed(1) + ' years';
+  }
+
+  // ---------- simulation ----------
+
+  function step(dt) {
+    simTime += dt;
+    simNs += nsPerS * dt;
+    for (var i = 0; i < TIERS.length; i++) {
+      var t = TIERS[i];
+      var trips = Math.floor(simNs / t.ns);
+      var rate = nsPerS / t.ns;
+      if (trips > t.lastTrips && rate < 5) {
+        // arrived at a wall: even trip counts land left, odd land right
+        var atRight = (trips % 2) === 1;
+        flashes.push({ i: i, right: atRight, t: simTime, col: t.col });
+      }
+      t.lastTrips = trips;
+    }
+    for (var f = flashes.length - 1; f >= 0; f--) {
+      if (simTime - flashes[f].t > FLASH_LIFE) flashes.splice(f, 1);
+    }
+  }
+
+  // ---------- drawing ----------
+
+  function resize() {
+    var d = window.devicePixelRatio || 1;
+    W = canvas.clientWidth;
+    canvas.width = Math.round(W * d);
+    canvas.height = Math.round(H * d);
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#0C1322';
+    ctx.fillRect(0, 0, W, H);
+
+    // faint vertical grid
+    ctx.strokeStyle = 'rgba(78,109,166,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var gx = PAD + 64; gx < W - PAD; gx += 64) {
+      ctx.moveTo(gx + .5, 44);
+      ctx.lineTo(gx + .5, H - 16);
+    }
+    ctx.stroke();
+
+    var trackL = PAD + 4, trackR = W - PAD - 4, trackW = trackR - trackL;
+
+    for (var i = 0; i < TIERS.length; i++) {
+      var t = TIERS[i];
+      var y = railY(i);
+      var crossings = simNs / t.ns;
+      var frac = crossings % 2;
+      var pos = frac < 1 ? frac : 2 - frac;
+      var movingRight = frac < 1;
+      var rate = nsPerS / t.ns;                     // crossings per animation second
+      var bandMix = Math.min(1, Math.max(0, (rate - 5) / 10));
+      var x = trackL + pos * trackW;
+
+      // rail
+      ctx.strokeStyle = 'rgba(42,58,94,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(trackL, y + .5);
+      ctx.lineTo(trackR, y + .5);
+      ctx.stroke();
+
+      // end walls
+      var capGrad = ctx.createLinearGradient(0, y - CAP_HALF, 0, y + CAP_HALF);
+      capGrad.addColorStop(0,   rgba(t.col, 0.05));
+      capGrad.addColorStop(0.5, rgba(t.col, 0.85));
+      capGrad.addColorStop(1,   rgba(t.col, 0.05));
+      ctx.strokeStyle = capGrad;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(trackL + 1.5, y - CAP_HALF); ctx.lineTo(trackL + 1.5, y + CAP_HALF);
+      ctx.moveTo(trackR - 1.5, y - CAP_HALF); ctx.lineTo(trackR - 1.5, y + CAP_HALF);
+      ctx.stroke();
+
+      // solid-light band when the dot crosses too fast to follow
+      if (bandMix > 0) {
+        ctx.strokeStyle = rgba(t.col, 0.10 * bandMix);
+        ctx.lineWidth = 12;
+        ctx.beginPath(); ctx.moveTo(trackL + 3, y); ctx.lineTo(trackR - 3, y); ctx.stroke();
+        ctx.strokeStyle = rgba(t.col, 0.30 * bandMix);
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(trackL + 3, y); ctx.lineTo(trackR - 3, y); ctx.stroke();
+        ctx.strokeStyle = rgba(t.col, 0.55 * bandMix);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(trackL + 3, y); ctx.lineTo(trackR - 3, y); ctx.stroke();
+      }
+
+      var dotAlpha = 1 - bandMix;
+      if (dotAlpha > 0.02) {
+        // comet streak behind the dot
+        var len = Math.min(rate * trackW * 0.08, 130);
+        if (len >= 4) {
+          var tail = movingRight ? Math.max(trackL, x - len) : Math.min(trackR, x + len);
+          var sg = ctx.createLinearGradient(tail, 0, x, 0);
+          sg.addColorStop(0, rgba(t.col, 0));
+          sg.addColorStop(1, rgba(t.col, 0.5 * dotAlpha));
+          ctx.strokeStyle = sg;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(tail, y); ctx.lineTo(x, y); ctx.stroke();
+        }
+        // the runner
+        var pg = ctx.createRadialGradient(x, y, 0, x, y, 14);
+        pg.addColorStop(0,    'rgba(255,255,255,' + 0.95 * dotAlpha + ')');
+        pg.addColorStop(0.25, rgba(t.col, 0.7 * dotAlpha));
+        pg.addColorStop(1,    rgba(t.col, 0));
+        ctx.fillStyle = pg;
+        ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,' + dotAlpha + ')';
+        ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // wall flashes
+    for (var f = 0; f < flashes.length; f++) {
+      var fl = flashes[f];
+      var age = (simTime - fl.t) / FLASH_LIFE;
+      var fy = railY(fl.i);
+      var fx = fl.right ? trackR - 1.5 : trackL + 1.5;
+      var r = 8 + 26 * age;
+      var fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
+      fg.addColorStop(0, rgba(fl.col, (1 - age) * 0.5));
+      fg.addColorStop(1, rgba(fl.col, 0));
+      ctx.fillStyle = fg;
+      ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // vignette
+    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(7,11,20,0)');
+    vg.addColorStop(1, 'rgba(7,11,20,0.4)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ---------- readouts ----------
+
+  function setText(el, s) { if (el.textContent !== s) el.textContent = s; }
+
+  function updateTrips() {
+    for (var i = 0; i < TIERS.length; i++) {
+      var t = TIERS[i];
+      setText(t.tripsEl, fmtTrips(Math.floor(simNs / t.ns)));
+    }
+  }
+
+  // ---------- controls ----------
+
+  var slider = document.getElementById('zoom-slider');
+  var zoomOut = document.getElementById('zoom-out');
+  var zoomFactor = document.getElementById('zoom-factor');
+
+  function setZoom(ns) {
+    nsPerS = Math.min(2e7, Math.max(1, ns));
+    var v = Math.log(nsPerS) / Math.LN10 / LOG_MAX * 1000;
+    slider.value = v;
+    slider.style.setProperty('--fill', (v / 10) + '%');
+    setText(zoomOut, '1 s on screen = ' + fmtNs(nsPerS));
+    setText(zoomFactor, '×' + Math.round(1e9 / nsPerS).toLocaleString('en-US'));
+    for (var i = 0; i < TIERS.length; i++) {
+      setText(TIERS[i].crossEl, fmtDur(TIERS[i].ns / nsPerS));
+    }
+  }
+
+  slider.addEventListener('input', function () {
+    setZoom(Math.pow(10, parseFloat(this.value) / 1000 * LOG_MAX));
+  });
+
+  var chips = document.querySelectorAll('.chips .btn');
+  for (var c = 0; c < chips.length; c++) {
+    chips[c].addEventListener('click', function () { setZoom(parseFloat(this.dataset.ns)); });
+  }
+
+  var btnRun = document.getElementById('btn-run');
+  btnRun.addEventListener('click', function () {
+    running = !running;
+    this.textContent = running ? 'Pause' : 'Run';
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    simNs = 0;
+    flashes.length = 0;
+    for (var i = 0; i < TIERS.length; i++) TIERS[i].lastTrips = 0;
+    updateTrips();
+  });
+
+  // ---------- main loop ----------
+
+  var lastT = 0;
+
+  function frame(t) {
+    var dt = Math.min(0.05, (t - lastT) / 1000);
+    lastT = t;
+    if (running) step(dt);
+    draw();
+    updateTrips();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  resize();
+  setZoom(2);
+
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    running = false;
+    btnRun.textContent = 'Run';
+    for (var k = 0; k < 45; k++) step(1 / 60);
+  }
+
+  requestAnimationFrame(function (t) { lastT = t; requestAnimationFrame(frame); });
+})();
+</script>
